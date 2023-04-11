@@ -26,6 +26,13 @@ jobs:
             pip install poetry pytest
             poetry export -f requirements.txt --output requirements.txt
             pip install -r requirements.txt
-        - name: Test with pytest
+        - name: Setup AWS Credentials
+          run: |
+            touch ~/.aws/credentials
+            echo "[default]" >> ~/.aws/credentials
+            echo "aws_access_key_id = ${{ secrets.AWS_ACCESS_KEY_ID }}" >> ~/.aws/credentials
+            echo "aws_secret_access_key = ${{ secrets.AWS_SECRET_ACCESS_KEY}}" >> ~/.aws/credentials
+
+        - name: Test with Pytest
           run: |
             pytest -v --junitxml=junit-report.xml
