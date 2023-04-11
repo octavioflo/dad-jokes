@@ -1,6 +1,8 @@
 # Self added files
 .dccache
 .
+.vscode
+.dcignore
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
