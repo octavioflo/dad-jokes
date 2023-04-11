@@ -1,17 +1,10 @@
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, Union
 from uuid import UUID
-from enum import Enum
-
-
-class Role(str, Enum):
-    user = "user"
-    admin = "admin"
-
 
 class DadJokes(BaseModel):
     id: int
-    joke: str
+    joke: str 
 
 
 class User(BaseModel):
@@ -19,5 +12,16 @@ class User(BaseModel):
     username: str
     full_name: str
     email: str
+
+
+class UserInDB(User):
     hashed_password: str
-    role: Role
+
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
+
+class TokenData(BaseModel):
+    username: Union[str, None] = None
