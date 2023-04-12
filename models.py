@@ -1,27 +1,19 @@
-from pydantic import BaseModel
-from typing import Optional, Union
-from uuid import UUID
-
-class DadJokes(BaseModel):
-    id: int
-    joke: str 
+from sqlalchemy import Column, Integer, String
+from database.database import Base
 
 
-class User(BaseModel):
-    id: Optional[UUID]
-    username: str
-    full_name: str
-    email: str
+class User(Base):
+    __tablename__ = "users"
+
+    id = Column(Integer, primary_key=True, index=True)
+    username = Column(String, unique=True, index=True)
+    full_name = Column(String, unique=True, index=True)
+    email = Column(String, unique=True, index=True)
+    hashed_password = Column(String)
 
 
-class UserInDB(User):
-    hashed_password: str
+class Item(Base):
+    __tablename__ = "jokes"
 
-
-class Token(BaseModel):
-    access_token: str
-    token_type: str
-
-
-class TokenData(BaseModel):
-    username: Union[str, None] = None
+    id = Column(Integer, primary_key=True, index=True)
+    joke = Column(String, index=True)

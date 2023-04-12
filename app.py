@@ -3,7 +3,7 @@ from datetime import datetime, timedelta, timezone
 from fastapi import FastAPI, Path, Form, HTTPException, Depends, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from fastapi.middleware.cors import CORSMiddleware
-from models import DadJokes, User, UserInDB, Token, TokenData
+from schema import DadJokes, User, UserInDB, Token, TokenData
 from typing import Union
 from jose import JWTError, jwt
 from passlib.context import CryptContext
@@ -12,8 +12,12 @@ from botocore.exceptions import ClientError
 import json
 import boto3
 import random
+import sqlite3
 
 app = FastAPI()
+
+conn = sqlite3.connect('database/jokes.db')
+c = conn.cursor()
 
 # origins = [
 #     "http://localhost",
@@ -44,8 +48,6 @@ def get_secret(secret_name, region_name, secret_key):
             SecretId=secret_name
         )
     except ClientError as e:
-        # For a list of exceptions thrown, see
-        # https://docs.aws.amazon.com/secretsmanager/latest/apireference/API_GetSecretValue.html
         raise e
 
     # Decrypts secret using the associated KMS key.
@@ -135,7 +137,6 @@ async def create_joke(joke: DadJokes):
     db.append(joke)
     return {"message": "success"}
 
-
 @app.get("/joke/{id}", response_model=DadJokes)  # https://fastapi.tiangolo.com/tutorial/path-params/
 async def get_joke_by_id(id: int = Path(title="The id of the joke.", ge=1)):  # ge indicates the the number needs to be greater than or equal to 1, validation.
     for joke in db:
@@ -154,8 +155,9 @@ async def update_joke(id: int, new_joke: DadJokes):
 
 
 @app.get("/jokes", response_model=list[DadJokes])  # https://fastapi.tiangolo.com/tutorial/query-params/
-async def get_jokes(skip: int = 0, limit: int = 10, token: str = Depends(oauth2_scheme)):
+async def get_jokes(skip: int = 0, limit: int = 10): #, token: str = Depends(oauth2_scheme)): if we want authentication
     return db[skip : skip + limit]
+
 
 
 async def get_current_user(token: str = Depends(oauth2_scheme)):

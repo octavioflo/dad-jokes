@@ -22,7 +22,7 @@ on:
 
 jobs:
   codeql:
-    name: Analyze
+    name: CodeQL
     runs-on: ubuntu-latest
     permissions:
       actions: read
@@ -50,6 +50,7 @@ jobs:
         category: "/language:${{matrix.language}}"
 
   pytest:
+    name: "Pytest"
     runs-on: ubuntu-latest
     strategy:
       matrix:
