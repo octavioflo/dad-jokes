@@ -2,12 +2,6 @@ from pydantic import BaseModel
 from typing import Optional, Union
 from uuid import UUID
 
-
-class DadJokes(BaseModel):
-    id: int
-    joke: str 
-
-
 class User(BaseModel):
     id: Optional[UUID]
     username: str

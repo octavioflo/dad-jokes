@@ -3,21 +3,32 @@ from datetime import datetime, timedelta, timezone
 from fastapi import FastAPI, Path, Form, HTTPException, Depends, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from fastapi.middleware.cors import CORSMiddleware
-from schema import DadJokes, User, UserInDB, Token, TokenData
+from schemas.jokes import JokesSchema
+from schemas.users import User, UserInDB, Token, TokenData
 from typing import Union
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 from botocore.exceptions import ClientError
+from sqlalchemy.orm import Session
+from database.database import SessionLocal, engine
+from models.jokes import db_insert_joke, db_joke_by_id
 
 import json
 import boto3
 import random
-import sqlite3
+import models.jokes
+import schemas
+
+models.jokes.Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 
-conn = sqlite3.connect('database/jokes.db')
-c = conn.cursor()
+def get_db():
+    database = SessionLocal()
+    try:
+        yield database
+    finally:
+        database.close()
 
 # origins = [
 #     "http://localhost",
@@ -78,11 +89,11 @@ fake_users_db: dict[User] = {
     },
 }
 
-db: list[DadJokes] = [ # https://www.countryliving.com/life/a27452412/best-dad-jokes/
-    DadJokes(id=1, joke="I'm afraid for the calendar. Its days are numbered."),
-    DadJokes(id=2, joke="What do you call a fish wearing a bowtie? Sofishticated."),
-    DadJokes(id=3, joke="My wife said I should do lunges to stay in shape. That would be a big step forward."),
-    DadJokes(id=4, joke="Singing in the shower is fun until you get soap in your mouth. Then it's a soap opera."),
+db: list[JokesSchema] = [ # https://www.countryliving.com/life/a27452412/best-dad-jokes/
+    JokesSchema(id=1, joke="I'm afraid for the calendar. Its days are numbered."),
+    JokesSchema(id=2, joke="What do you call a fish wearing a bowtie? Sofishticated."),
+    JokesSchema(id=3, joke="My wife said I should do lunges to stay in shape. That would be a big step forward."),
+    JokesSchema(id=4, joke="Singing in the shower is fun until you get soap in your mouth. Then it's a soap opera."),
 ]
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -124,7 +135,7 @@ async def root():
     return {"message": "Welcome to our Dad Jokes Application...."}
 
 
-@app.get("/joke", response_model=DadJokes, summary="Gets a dad joke", response_description="Returned dad joke.")
+@app.get("/joke", response_model=JokesSchema, summary="Gets a dad joke", response_description="Returned dad joke.")
 async def get_joke():
     '''
         Returns a dad joke directly from the super fancy database!
@@ -133,20 +144,21 @@ async def get_joke():
 
 
 @app.post("/joke")
-async def create_joke(joke: DadJokes):
-    db.append(joke)
+def create_joke(new_joke: JokesSchema, database: Session = Depends(get_db)):
+    db_insert_joke(database, new_joke)
     return {"message": "success"}
 
-@app.get("/joke/{id}", response_model=DadJokes)  # https://fastapi.tiangolo.com/tutorial/path-params/
-async def get_joke_by_id(id: int = Path(title="The id of the joke.", ge=1)):  # ge indicates the the number needs to be greater than or equal to 1, validation.
-    for joke in db:
-        if joke.id == id:
-            return joke
-    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Joke not found.")
+@app.get("/joke/{id}", response_model=JokesSchema)  # https://fastapi.tiangolo.com/tutorial/path-params/
+def get_joke_by_id(id: int = Path(title="The id of the joke.", ge=1), db: Session = Depends(get_db)):  # ge indicates the the number needs to be greater than or equal to 1, validation.
+    joke = db_joke_by_id(db, id)
+    if not joke:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Joke not found.")
+    return joke
+    
 
 
 @app.put("/joke/{id}")
-async def update_joke(id: int, new_joke: DadJokes):
+async def update_joke(id: int, new_joke: JokesSchema):
     for joke in db:
         if joke.id == id:
             joke.joke = new_joke.joke
@@ -154,7 +166,7 @@ async def update_joke(id: int, new_joke: DadJokes):
     raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Joke not found.")
 
 
-@app.get("/jokes", response_model=list[DadJokes])  # https://fastapi.tiangolo.com/tutorial/query-params/
+@app.get("/jokes", response_model=list[JokesSchema])  # https://fastapi.tiangolo.com/tutorial/query-params/
 async def get_jokes(skip: int = 0, limit: int = 10): #, token: str = Depends(oauth2_scheme)): if we want authentication
     return db[skip : skip + limit]
 
