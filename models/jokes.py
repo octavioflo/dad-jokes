@@ -3,6 +3,8 @@ from sqlalchemy.orm import relationship, Session
 from schemas.jokes import JokesSchema
 
 
+# TODO: clean up this and try class methods 
+
 from database.database import Base
 
 def db_joke_by_id(db: Session, joke_id: int):

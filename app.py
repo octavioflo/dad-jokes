@@ -17,7 +17,6 @@ import json
 import boto3
 import random
 import models.jokes
-import schemas
 
 models.jokes.Base.metadata.create_all(bind=engine)
 
