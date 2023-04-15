@@ -11,7 +11,7 @@ from passlib.context import CryptContext
 from botocore.exceptions import ClientError
 from sqlalchemy.orm import Session
 from database.database import SessionLocal, engine
-from models.jokes import db_insert_joke, db_joke_by_id
+from models.jokes import JokesModel
 
 import json
 import boto3
@@ -144,12 +144,12 @@ async def get_joke():
 
 @app.post("/joke")
 def create_joke(new_joke: JokesSchema, database: Session = Depends(get_db)):
-    db_insert_joke(database, new_joke)
+    JokesModel.db_insert_joke(database, new_joke)
     return {"message": "success"}
 
 @app.get("/joke/{id}", response_model=JokesSchema)  # https://fastapi.tiangolo.com/tutorial/path-params/
 def get_joke_by_id(id: int = Path(title="The id of the joke.", ge=1), db: Session = Depends(get_db)):  # ge indicates the the number needs to be greater than or equal to 1, validation.
-    joke = db_joke_by_id(db, id)
+    joke = JokesModel.db_joke_by_id(db, id)
     if not joke:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Joke not found.")
     return joke
@@ -166,8 +166,8 @@ async def update_joke(id: int, new_joke: JokesSchema):
 
 
 @app.get("/jokes", response_model=list[JokesSchema])  # https://fastapi.tiangolo.com/tutorial/query-params/
-async def get_jokes(skip: int = 0, limit: int = 10): #, token: str = Depends(oauth2_scheme)): if we want authentication
-    return db[skip : skip + limit]
+async def get_jokes(skip: int = 0, limit: int = 10, db: Session = Depends(get_db)): #, token: str = Depends(oauth2_scheme)): if we want authentication
+    return JokesModel.get_jokes(db, skip, limit)
 
 
 
