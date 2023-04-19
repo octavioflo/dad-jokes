@@ -3,12 +3,12 @@ from typing import Optional, Union
 from uuid import UUID
 
 class User(BaseModel):
-    id: Optional[UUID]
     username: str
     full_name: str
     email: str
 
 class UserInDB(User):
+    uuid: Optional[UUID]
     hashed_password: str
 
 

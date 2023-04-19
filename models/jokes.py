@@ -31,7 +31,6 @@ class JokesModel(Base):
     
     @classmethod
     def update_joke(cls, joke_id: int, new_joke: JokesSchema, db: Session):
-        #db.update(cls).values({"column_name":"value"})
         db.query(cls).filter(cls.id == joke_id).update({"joke": new_joke.joke})
         db.commit()
     

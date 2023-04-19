@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 from database.database import SessionLocal, engine
 from schemas.index import User, UserInDB, Token, TokenData
 from dependencies import get_db
+from models.users import UserModel
 
 import json
 import boto3
@@ -69,13 +70,8 @@ def get_password_hash(password):
     return pwd_context.hash(password)
 
 
-def get_user(db, username: str):
-    if username in db:
-        user_dict = db[username]
-        return UserInDB(**user_dict)
-
-def authenticate_user(fake_db, username: str, password: str):
-    user = get_user(fake_db, username)
+def authenticate_user(username: str, password: str, db: Session = Depends(get_db)):
+    user = UserModel.get_user(db, username)
     if not user:
         return False
     if not verify_password(password, user.hashed_password):
@@ -93,7 +89,7 @@ def create_access_token(data: dict, expires_delta: Union[timedelta, None] = None
     
 
 
-async def get_current_user(token: str = Depends(oauth2_scheme)):
+async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -107,23 +103,22 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
         token_data = TokenData(username=username)
     except JWTError as e:
         raise credentials_exception from e
-    user = get_user(fake_users_db, username=token_data.username)
+    user = UserModel.get_user(db, username=token_data.username)
     if user is None:
         raise credentials_exception
     return user
 
 
 @router.post("/register")
-async def create_user(user: UserInDB):
+async def create_user(user: UserInDB, db: Session = Depends(get_db)):
     user.hashed_password = get_password_hash(user.hashed_password)
-    new_user = {user.username: user}  
-    fake_users_db.update(new_user)
+    UserModel.create_user(db, user)
     return {"message": "success"}
 
 
 @router.post("/token", response_model=Token)
-async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
-    user = authenticate_user(fake_users_db, form_data.username, form_data.password)
+async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+    user = authenticate_user(form_data.username, form_data.password, db)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -137,6 +132,6 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
     return {"access_token": access_token, "token_type": "bearer"}
 
 
-@router.get('/users/me', response_model=User)
+@router.get("/users/me", response_model=User) # response_model=User
 async def get_user_data(current_user: User = Depends(get_current_user)):
     return current_user
