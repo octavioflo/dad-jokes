@@ -32,8 +32,8 @@ on:
 
 env:
   AWS_REGION: us-east-1                   
-  ECR_REPOSITORY: 058997800912.dkr.ecr.us-east-1.amazonaws.com/dad-joke-development 
-  CONTAINER_NAME: dad-jokes           
+  ECR_REPOSITORY: dad-joke-development 
+  CONTAINER_NAME: dad-jokes
 
 permissions:
   contents: read
