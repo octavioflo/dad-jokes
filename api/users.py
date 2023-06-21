@@ -38,7 +38,8 @@ def get_secret(secret_name, region_name, secret_key):
     return json_response[secret_key]
 
 
-SECRET_KEY = get_secret("dev/dad-joke", "us-east-1", "dad-joke-secret-key")
+# SECRET_KEY = get_secret("dev/dad-joke", "us-east-1", "dad-joke-secret-key") need to figure this out.
+SECRET_KEY = "9b39eeadc27dc5fd9a97d98abe5bb909ce302e980f6a1e1f20743cc683fabca5"
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
